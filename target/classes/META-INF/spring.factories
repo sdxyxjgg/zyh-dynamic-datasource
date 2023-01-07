@@ -1,0 +1,2 @@
+# 可以依靠这个来实现自动加载，但是我觉得还是让用户控制比较好
+# org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.zhuyahui.MyDynamicDataSourceConfig

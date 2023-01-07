@@ -1,0 +1,52 @@
+{
+  "properties": [
+    {
+      "sourceType": "com.zhuyahui.properties.common.MyCreateDefaultDataSourceBean",
+      "name": "zyh-datasource.data-source-type",
+      "type": "com.zhuyahui.util.constant.ChooseDataSourceTypeEnum",
+      "description": "选择那个商家的数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.common.MyCreateDefaultDataSourceBean",
+      "name": "zyh-datasource.switch-slave-type",
+      "type": "com.zhuyahui.util.constant.ChooseSlaveDataSourceWayEnum",
+      "description": "选择从数据源的选择方式."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.common.MyCreateDefaultDataSourceBean",
+      "name": "zyh-datasource.master",
+      "type": "com.zaxxer.hikari.HikariDataSource",
+      "description": "Hikari主数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.common.MyCreateDefaultDataSourceBean",
+      "name": "zyh-datasource.slaves",
+      "type": "java.util.List<com.zaxxer.hikari.HikariDataSource>",
+      "description": "Hikari的多个从数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.MyCreateDynamicHikariDataSourceBean",
+      "name": "zyh-datasource.hikari.master",
+      "type": "com.zaxxer.hikari.HikariDataSource",
+      "description": "Hikari主数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.MyCreateDynamicHikariDataSourceBean",
+      "name": "zyh-datasource.hikari.slaves",
+      "type": "java.util.List<com.zaxxer.hikari.HikariDataSource>",
+      "description": "Hikari主数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.MyCreateDynamicDruidDataSourceBean",
+      "name": "zyh-datasource.druid.master",
+      "type": "com.alibaba.druid.pool.DruidDataSource",
+      "description": "Druid主数据源."
+    },
+    {
+      "sourceType": "com.zhuyahui.properties.MyCreateDynamicDruidDataSourceBean",
+      "name": "zyh-datasource.druid.slaves",
+      "type": "java.util.List<com.alibaba.druid.pool.DruidDataSource>",
+      "description": "Druid主数据源."
+    }
+  ]
+}
