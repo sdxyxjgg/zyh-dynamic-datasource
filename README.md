@@ -1,13 +1,15 @@
 ## 自己写的一个读写分离小工具（下面就是介绍写的过程以及使用方法）：
-#### 作责： <font color="#ed1941">***Zhu Yahui***</font>
-> <font color="#ed1941">说明：大学生一枚，写的不好，还请指教。</font>
+### 开发人员信息：
+> 产品设计者： ***Zhu Yahui*** 和 ***xiaomaomi-xj***<br>
+> 产品实现者： ***Zhu Yahui*** 和 ***xiaomaomi-xj***<br>
+> 产品发布者： ***xiaomaomi-xj***<br>
 ### 想法1
 * 我们增加一个读注解（ZyhDataSourceRead），一个写注解（ZyhDataSourceWrite），可以在类上定义一个读注解，在方法上定义写注解，写注解执行主数据库，读注解执行从数据库
 * 写注解要自带事务，这样我们就不用再前去写Transactional注解，这样既不会发生忘写事务的可能，还可以减小事务的粒度，提升效率
 * 主数据库只有一个还好，对于从数据库可能是多个，我们要产生一种策略，让这多个数据库来轮询或随机的选择，如果用户没有指定还应该给予默认的方式：随机
 ### 应得结论1
 1. 第一种情况
-    * 类上无注解，方法上无注解，为主数据库，不带事务
+    * 类上无注解，方法上无注解，为当前数据库，不带事务
     * 类上无注解，方法上写注解，为主数据库，自带事务
     * 类上无注解，方法上读注解，为从数据库，数据源轮询或者随机
 2. 第二种情况
@@ -114,7 +116,17 @@ zyh-datasource:
 ```
 ### 使用方法
 #### 配置文件（就在上面）
-#### 引入依赖
+#### 引入依赖（二选一就行了，内容功能一致,只是放在了不同的平台）
+#### 基于github的：**[maven依赖中央厂库地址](https://mvnrepository.com/artifact/io.github.xiaomaomi-xj/zyh-dynamic-datasource/1.0.3 "跳转到厂库地址")**
+```xml
+<dependency>
+    <groupId>io.github.xiaomaomi-xj</groupId>
+    <artifactId>zyh-dynamic-datasource</artifactId>
+    <version>1.0.3</version>
+</dependency>
+```
+#### 基于gitee的：**[maven依赖中央厂库地址](https://mvnrepository.com/artifact/io.gitee.xiaomaomi-xj/zyh-dynamic-datasource/1.0.3 "跳转到厂库地址")**
+##### ***[gitee的项目位置](https://gitee.com/xiaomaomi-xj/zyh-dynamic-datasource "跳转到gitee的项目所在位置")***
 ```xml
 <dependency>
     <groupId>io.gitee.xiaomaomi-xj</groupId>
@@ -161,8 +173,8 @@ public class ToggleTestServiceImpl implements ToggleTestService {
     }
 }
 ```
-#### 如果想控制事务粒度
-##### 在service层方法里面使用方法
+#### 如果想更加细致的控制事务粒度
+##### 在service层方法里面使用方法：
 ```java
 @Override
 public void delContextMethod(String id) {
@@ -172,16 +184,16 @@ public void delContextMethod(String id) {
     MyAloneHandlerReadWrite.write(()->toggleTestDao.removeContext(id),Integer.class);
 }
 ```
-##### 或者在dao层使用方法
+##### 或者在dao层使用方法：
 ```java
 //主数据库
 return MyAloneHandlerReadWrite.write(()->{
-            int update = jdbcTemplate.update("delete from user where id=2");
+            int update = jdbcTemplate.update("delete  from  user  where id = ?", 2);
             //事务正常回滚
             int i=1/0;
             return update;
         },Integer.class);
 ```
 ### 使用demo的例子：
-> 可以看这个:<br>
-> https://gitee.com/xiaomaomi-xj/dynamic-datasource-test-demo
+> 可以看这个: 
+> [动态数据源测试项目](https://github.com/xiaomaomi-xj/dynamic-datasource-test-demo "进入动态数据源测试项目")
