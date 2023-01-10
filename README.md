@@ -115,24 +115,28 @@ zyh-datasource:
 #        password: 123456
 ```
 ### 使用方法
-#### 配置文件（就在上面）
+#### 配置文件（配置方法就在上面）
 #### 引入依赖（二选一就行了，内容功能一致,只是放在了不同的平台）
-#### 基于github的：**[maven依赖中央厂库地址](https://mvnrepository.com/artifact/io.github.xiaomaomi-xj/zyh-dynamic-datasource/1.0.3 "跳转到厂库地址")**
+#### [你可以到maven中央厂库搜索“zyh”获取最新版](https://mvnrepository.com/search?q=zyh "跳转到maven中央厂库")
+#### 基于github的：
 ```xml
+<!-- https://mvnrepository.com/artifact/io.github.xiaomaomi-xj/zyh-dynamic-datasource -->
 <dependency>
     <groupId>io.github.xiaomaomi-xj</groupId>
     <artifactId>zyh-dynamic-datasource</artifactId>
     <version>1.0.3</version>
 </dependency>
+
 ```
-#### 基于gitee的：**[maven依赖中央厂库地址](https://mvnrepository.com/artifact/io.gitee.xiaomaomi-xj/zyh-dynamic-datasource/1.0.3 "跳转到厂库地址")**
-##### ***[gitee的项目位置](https://gitee.com/xiaomaomi-xj/zyh-dynamic-datasource "跳转到gitee的项目所在位置")***
+#### 基于gitee的：***[gitee的项目位置](https://gitee.com/xiaomaomi-xj/zyh-dynamic-datasource "跳转到gitee的项目所在位置")***
 ```xml
+<!-- https://mvnrepository.com/artifact/io.gitee.xiaomaomi-xj/zyh-dynamic-datasource -->
 <dependency>
     <groupId>io.gitee.xiaomaomi-xj</groupId>
     <artifactId>zyh-dynamic-datasource</artifactId>
     <version>1.0.3</version>
 </dependency>
+
 ```
 #### 启动类
 ```java
