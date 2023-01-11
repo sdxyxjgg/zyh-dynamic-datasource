@@ -1,14 +1,12 @@
 package com.zhuyahui.properties;
 
-import com.alibaba.druid.pool.DruidDataSource;
-import com.zaxxer.hikari.HikariDataSource;
 import com.zhuyahui.exception.ZyhServiceRunTimeException;
 import com.zhuyahui.properties.common.MyCreateDefaultDataSourceBean;
 import com.zhuyahui.util.constant.ChooseDataSourceTypeEnum;
 import com.zhuyahui.util.constant.ChooseSlaveDataSourceWayEnum;
-import com.zhuyahui.util.constant.MyDynamicDataSourceConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.ObjectUtils;
 
 import javax.sql.DataSource;
@@ -19,8 +17,8 @@ import java.util.List;
  * 对接受配置信息的三个类进行处理
  *
  * @author : Zhu Yahui
- * @version : 1.0.0
- * @date : 2023/1/3
+ * @version : 1.0.4
+ * @date : 2023/1/11
  */
 public class MyHandleDataSourceParam {
 
@@ -38,15 +36,15 @@ public class MyHandleDataSourceParam {
      */
     public static ChooseSlaveDataSourceWayEnum CHOOSE_SLAVE_WAY;
 
-    private final MyCreateDefaultDataSourceBean myCreateDefaultDataSourceBean;
-    private final MyCreateDynamicHikariDataSourceBean myCreateDynamicHikariDataSourceBean;
-    private final MyCreateDynamicDruidDataSourceBean myCreateDynamicDruidDataSourceBean;
+    @Autowired(required = false)
+    private MyCreateDefaultDataSourceBean myCreateDefaultDataSourceBean;
 
-    public MyHandleDataSourceParam(MyCreateDefaultDataSourceBean myCreateDefaultDataSourceBean, MyCreateDynamicHikariDataSourceBean myCreateDynamicHikariDataSourceBean, MyCreateDynamicDruidDataSourceBean myCreateDynamicDruidDataSourceBean) {
-        this.myCreateDefaultDataSourceBean = myCreateDefaultDataSourceBean;
-        this.myCreateDynamicHikariDataSourceBean = myCreateDynamicHikariDataSourceBean;
-        this.myCreateDynamicDruidDataSourceBean = myCreateDynamicDruidDataSourceBean;
-    }
+    @Autowired(required = false)
+    private MyCreateDynamicHikariDataSourceBean myCreateDynamicHikariDataSourceBean;
+
+    @Autowired(required = false)
+    private MyCreateDynamicDruidDataSourceBean myCreateDynamicDruidDataSourceBean;
+
 
     /**
      * 获取主数据库
@@ -104,59 +102,20 @@ public class MyHandleDataSourceParam {
         if (ObjectUtils.isEmpty(chooseDataSourceTypeEnum)) {
             chooseDataSourceTypeEnum = ChooseDataSourceTypeEnum.HIKARI;
         }
-        //设置驱动默认值的时候需要先check一下
+        //检查配置文件是否存在问题
         check();
-        //如果用户没有设置驱动，就用com.mysql.cj.jdbc.Driver,配置文件没有赋值，他的datasource就是空，这里要注意
-        HikariDataSource defaultDataSource = myCreateDefaultDataSourceBean.getMaster();
-        List<HikariDataSource> defaultDataSourceBeanSlaves = myCreateDefaultDataSourceBean.getSlaves();
-        DruidDataSource druidDataSource = myCreateDynamicDruidDataSourceBean.getMaster();
-        List<DruidDataSource> druidDataSourceBeanSlaves = myCreateDynamicDruidDataSourceBean.getSlaves();
-        HikariDataSource hikariDataSource = myCreateDynamicHikariDataSourceBean.getMaster();
-        List<HikariDataSource> hikariDataSourceBeanSlaves = myCreateDynamicHikariDataSourceBean.getSlaves();
-        if (!ObjectUtils.isEmpty(defaultDataSource)) {
-            defaultDataSource.setDriverClassName(
-                    ObjectUtils.isEmpty(defaultDataSource.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            defaultDataSource.getDriverClassName()
-            );
-            defaultDataSourceBeanSlaves.forEach(v -> v.setDriverClassName(
-                    ObjectUtils.isEmpty(v.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            v.getDriverClassName()
-            ));
-        } else if (!ObjectUtils.isEmpty(hikariDataSource)) {
-            hikariDataSource.setDriverClassName(
-                    ObjectUtils.isEmpty(hikariDataSource.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            hikariDataSource.getDriverClassName()
-            );
-            hikariDataSourceBeanSlaves.forEach(v -> v.setDriverClassName(
-                    ObjectUtils.isEmpty(v.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            v.getDriverClassName()
-            ));
-        } else if (!ObjectUtils.isEmpty(druidDataSource)) {
-            druidDataSource.setDriverClassName(
-                    ObjectUtils.isEmpty(druidDataSource.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            druidDataSource.getDriverClassName()
-            );
-            druidDataSourceBeanSlaves.forEach(v -> v.setDriverClassName(
-                    ObjectUtils.isEmpty(v.getDriverClassName()) ?
-                            MyDynamicDataSourceConstant.DEFAULT_DRIVER_NAME :
-                            v.getDriverClassName()
-            ));
-        }
     }
 
     private void check() {
-        //如果三个主数据库都不存在，需要报错
-        if (ObjectUtils.isEmpty(myCreateDefaultDataSourceBean.getMaster())
-                && ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getMaster())
-                && ObjectUtils.isEmpty(myCreateDynamicHikariDataSourceBean.getMaster())) {
-            LOG.error("没有指定master数据源");
-            throw new ZyhServiceRunTimeException("没有指定master数据源");
+        //处理没有依赖的情况
+        if (ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean)) {
+            check1();
+        } else {
+            check2();
         }
+    }
+
+    private void checkCopy() {
         //没指定druid也没指定hikari,直接把master写在了zyh-datasource下面的情况进行处理
         if (!ObjectUtils.isEmpty(myCreateDefaultDataSourceBean.getMaster())) {
             //如果没有指定Druid也没有指定hikari，直接把master写在了zyh-datasource下面，那么就为hikari
@@ -166,19 +125,6 @@ public class MyHandleDataSourceParam {
             }
             //查看有没有配置从数据源
             if (ObjectUtils.isEmpty(myCreateDefaultDataSourceBean.getSlaves())) {
-                LOG.error("从数据源，最少配置一个");
-                throw new ZyhServiceRunTimeException("从数据源，最少配置一个");
-            }
-            return;
-        }
-        //默认没有master，就看druid下面有没有master
-        if (!ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getMaster())) {
-            if (chooseDataSourceTypeEnum != ChooseDataSourceTypeEnum.DRUID) {
-                LOG.error("你指定的数据源类型不是druid，或者你没有指定类型，默认为hikari");
-                throw new ZyhServiceRunTimeException("你指定的数据源类型不是druid，或者你没有指定类型，默认为hikari");
-            }
-            //查看有没有配置从数据源
-            if (ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getSlaves())) {
                 LOG.error("从数据源，最少配置一个");
                 throw new ZyhServiceRunTimeException("从数据源，最少配置一个");
             }
@@ -196,6 +142,44 @@ public class MyHandleDataSourceParam {
                 throw new ZyhServiceRunTimeException("从数据源，最少配置一个");
             }
         }
+    }
+
+    private void check1() {
+        //如果三个主数据库都不存在，需要报错
+        if (ObjectUtils.isEmpty(myCreateDefaultDataSourceBean.getMaster())
+                && ObjectUtils.isEmpty(myCreateDynamicHikariDataSourceBean.getMaster())) {
+            LOG.error("没有指定master数据源，或者你在druid里面指定的master数据源，而你并没有引入druid的依赖");
+            throw new ZyhServiceRunTimeException("没有指定master数据源，或者你在druid里面指定的master数据源，而你并没有引入druid的依赖");
+        }
+        if (chooseDataSourceTypeEnum == ChooseDataSourceTypeEnum.DRUID) {
+            LOG.error("你没有导入druid数据源依赖，不能使用druid数据源");
+            throw new ZyhServiceRunTimeException("你没有导入druid数据源依赖，不能使用druid数据源");
+        }
+        checkCopy();
+    }
+
+    private void check2() {
+        //如果三个主数据库都不存在，需要报错
+        if (ObjectUtils.isEmpty(myCreateDefaultDataSourceBean.getMaster())
+                && ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getMaster())
+                && ObjectUtils.isEmpty(myCreateDynamicHikariDataSourceBean.getMaster())) {
+            LOG.error("没有指定master数据源");
+            throw new ZyhServiceRunTimeException("没有指定master数据源");
+        }
+        //默认没有master，就看druid下面有没有master
+        if (!ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getMaster())) {
+            if (chooseDataSourceTypeEnum != ChooseDataSourceTypeEnum.DRUID) {
+                LOG.error("你指定的数据源类型不是druid，或者你没有指定类型，默认为hikari");
+                throw new ZyhServiceRunTimeException("你指定的数据源类型不是druid，或者你没有指定类型，默认为hikari");
+            }
+            //查看有没有配置从数据源
+            if (ObjectUtils.isEmpty(myCreateDynamicDruidDataSourceBean.getSlaves())) {
+                LOG.error("从数据源，最少配置一个");
+                throw new ZyhServiceRunTimeException("从数据源，最少配置一个");
+            }
+            return;
+        }
+        checkCopy();
     }
 
 }

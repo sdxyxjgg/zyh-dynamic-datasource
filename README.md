@@ -1,3 +1,27 @@
+> ### 更新版本1.0.4 <br>
+> * 对druid数据源依赖加上了```<optional>true</optional>```,引入此依赖你的项目中不再会自动引入druid数据源，因为我们可能压根就不用druid数据源，如果你想要使用druid数据源，可以自己引入依赖，让用户来控制，使用方式不变---(**优化**)
+> * 对注解(ZyhDataSourceRead)新增了value属性，可以自定义指定某一个从库数据源---(**新增**)
+>   ```java
+>   //使用方法（如果不指定值，还是和之前一样，随机或者轮询）
+>   //(slave1,slave2...)代表你配置的从数据的第一个，第二个...依次类推
+>   @ZyhDataSourceRead("slave1")
+>   @Override
+>   public DataMap getAppointContext() {
+>       return toggleTestDao.getContext();
+>   }
+>   ```
+> * 对单独的读写方法类(MyAloneHandlerReadWrite)增加自定义指定某一个从库数据源的读方法---(**新增**)
+>   ```java
+>   //使用方法（如果不指定值，还是和之前一样，随机或者轮询）
+>   //(slave1,slave2...)代表你配置的从数据的第一个，第二个...依次类推
+>   public DataMap getNotAnnotationAppointContext() {
+>       return MyAloneHandlerReadWrite.read>(toggleTestDao::getContext,DataMap.class,"slave2");
+>   }
+>   ```
+> 对于依赖的话，这里就不贴了，[你可以到maven中央厂库搜索“zyh”获取最新版以及其他版本](https://mvnrepository.com/search?q=zyh "跳转到maven中央厂库") <br>
+> 其他功能，和之前使用方式一样，下面内容为1.0.3版本的内容（第一个版本）
+
+
 ## 自己写的一个读写分离小工具（下面就是介绍写的过程以及使用方法）：
 ### 开发人员信息：
 > 产品设计者： ***Zhu Yahui*** 和 ***xiaomaomi-xj***<br>

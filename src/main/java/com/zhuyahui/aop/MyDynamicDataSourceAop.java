@@ -2,6 +2,7 @@ package com.zhuyahui.aop;
 
 import com.zhuyahui.annotation.ZyhDataSourceRead;
 import com.zhuyahui.annotation.ZyhDataSourceWrite;
+import com.zhuyahui.exception.ZyhServiceRunTimeException;
 import com.zhuyahui.properties.MyHandleDataSourceParam;
 import com.zhuyahui.util.MyDynamicDataSourceContextHolder;
 import com.zhuyahui.util.constant.ChooseSlaveDataSourceWayEnum;
@@ -12,6 +13,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
+import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -23,8 +25,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * order(-1) 是保证了这个aop会发生在Transactional的事务aop之前，这样的话Transactional还会生效
  *
  * @author : Zhu Yahui
- * @version : 1.0.0
- * @date : 2022/12/31
+ * @version : 1.0.4
+ * @date : 2023/1/11
  */
 @Aspect
 @Order(-1)
@@ -57,14 +59,26 @@ public class MyDynamicDataSourceAop {
         Class<?> targetClass = signature.getDeclaringType();
         //先处理方法，如果方法上面没有再处理类
         if (method.isAnnotationPresent(ZyhDataSourceRead.class)) {
-            //处理读
-            handleRead();
+            ZyhDataSourceRead annotation = method.getAnnotation(ZyhDataSourceRead.class);
+            if (ObjectUtils.isEmpty(annotation.value())) {
+                //处理读
+                handleRead();
+            } else {
+                //指定了某一个从数据库的名字
+                handleReadAppoint(annotation.value());
+            }
         } else if (method.isAnnotationPresent(ZyhDataSourceWrite.class)) {
             //处理写
             handleWrite();
         } else if (targetClass.isAnnotationPresent(ZyhDataSourceRead.class)) {
-            //处理读
-            handleRead();
+            ZyhDataSourceRead annotation = targetClass.getAnnotation(ZyhDataSourceRead.class);
+            if (ObjectUtils.isEmpty(annotation.value())) {
+                //处理读
+                handleRead();
+            } else {
+                //指定了某一个从数据库的名字
+                handleReadAppoint(annotation.value());
+            }
         } else if (targetClass.isAnnotationPresent(ZyhDataSourceWrite.class)) {
             //处理写
             handleWrite();
@@ -81,7 +95,28 @@ public class MyDynamicDataSourceAop {
     }
 
     /**
-     * 处理读注解
+     * 处理指定从数据库的情况
+     *
+     * @param name 指定的从数据库名字
+     */
+    public static void handleReadAppoint(String name) {
+        String currentSlaveName = "";
+        for (String slaveName : MyHandleDataSourceParam.SLAVE_NAME) {
+            if (slaveName.startsWith(name)) {
+                if (name.length() >= 6) {
+                    currentSlaveName = slaveName;
+                    break;
+                }
+            }
+        }
+        if (ObjectUtils.isEmpty(currentSlaveName)) {
+            throw new ZyhServiceRunTimeException("你指定的从数据库名称不存在");
+        }
+        MyDynamicDataSourceContextHolder.setContextKey(currentSlaveName);
+    }
+
+    /**
+     * 处理读的轮询和随机
      */
     public static void handleRead() {
         //如果是读注解,先判断方式是轮询还是随机
