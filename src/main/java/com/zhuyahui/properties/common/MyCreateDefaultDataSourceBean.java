@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zhuyahui.util.constant.ChooseDataSourceTypeEnum;
 import com.zhuyahui.util.constant.ChooseSlaveDataSourceWayEnum;
 import com.zhuyahui.util.constant.MyDynamicDataSourceConstant;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -13,13 +14,15 @@ import java.util.List;
  * 默认的配置方式，获取配置文件中的多个数据源
  *
  * @author : Zhu Yahui
- * @version : 1.0.4
- * @date : 2023/1/11
+ * @version : 1.0.5
+ * @date : 2023/1/12
  */
 public class MyCreateDefaultDataSourceBean {
     private ChooseDataSourceTypeEnum dataSourceType;
     private ChooseSlaveDataSourceWayEnum switchSlaveType;
+    @NestedConfigurationProperty
     private HikariDataSource master;
+    @NestedConfigurationProperty
     private List<HikariDataSource> slaves;
 
     public void setDataSourceType(ChooseDataSourceTypeEnum dataSourceType) {

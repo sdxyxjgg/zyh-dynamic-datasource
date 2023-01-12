@@ -2,6 +2,7 @@ package com.zhuyahui.properties;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.zhuyahui.util.constant.MyDynamicDataSourceConstant;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -10,11 +11,13 @@ import java.util.List;
  * druid的方式，获取配置文件中的多个数据源
  *
  * @author : Zhu Yahui
- * @version : 1.0.4
- * @date : 2023/1/11
+ * @version : 1.0.5
+ * @date : 2023/1/12
  */
 public class MyCreateDynamicDruidDataSourceBean {
+    @NestedConfigurationProperty
     private DruidDataSource master;
+    @NestedConfigurationProperty
     private List<DruidDataSource> slaves;
 
     public void setMaster(DruidDataSource master) {

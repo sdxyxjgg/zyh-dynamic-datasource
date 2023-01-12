@@ -15,7 +15,7 @@
 <!--    https://github.com/xiaomaomi-xj-->
     <groupId>io.github.xiaomaomi-xj</groupId>
     <artifactId>zyh-dynamic-datasource</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
     <name>zyh-dynamic-datasource</name>
     <description>Dynamic data source with annotations and methods</description>

@@ -2,6 +2,7 @@ package com.zhuyahui.properties;
 
 import com.zaxxer.hikari.HikariDataSource;
 import com.zhuyahui.util.constant.MyDynamicDataSourceConstant;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
@@ -11,11 +12,13 @@ import java.util.List;
  * 对于某个属性，比较复杂，可以使用这个@NestedConfigurationProperty，嵌套配置
  *
  * @author : Zhu Yahui
- * @version : 1.0.4
- * @date : 2023/1/11
+ * @version : 1.0.5
+ * @date : 2023/1/12
  */
 public class MyCreateDynamicHikariDataSourceBean {
+    @NestedConfigurationProperty
     private HikariDataSource master;
+    @NestedConfigurationProperty
     private List<HikariDataSource> slaves;
 
     public HikariDataSource getMaster() {
