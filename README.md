@@ -1,8 +1,75 @@
+> ### 更新版本1.0.6 <br>
+> #### 因为在之前。我设置了默认的事务都是读已提交(rc)，查询就不需要加事务，像这种的话，适用于高并发项目
+> #### 但是，有时候我们可能真的需要可重复读(rr)这个隔离级别，而一旦使用了这种级别，就表明了你的业务查询的时候需要某一时刻的固定数据而不是最新的数据，那么我们的查询也需要加上事务
+> #### 其实像这种情况，用之前的版本也可以解决：
+> ```java
+> //@ZyhDataSourceRead   还是和之前一样，不指定就是随机或轮询
+> @ZyhDataSourceRead("slave3")
+> @ZyhDataSourceWrite(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+> public void getContextOnTransactionOnAnnotation() {
+>     System.out.println(toggleTestDao.getContext());
+>     System.out.println(toggleTestDao.getContext());
+>     try {
+>         /**
+>          * 在等待的时间在sql终端执行这条语句，下面两条语句的输出依然和上面的输出结果一致
+>          SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+>          begin;
+>          update user set name='slave1-1' where id=1;
+>          commit;
+>          */
+>         TimeUnit.SECONDS.sleep(10);
+>     } catch (InterruptedException e) {
+>         e.printStackTrace();
+>     }
+>     System.out.println(toggleTestDao.getContext());
+>     System.out.println(toggleTestDao.getContext());
+> }
+> ```
+> #### 很显然,这样的话，我们就不能更好的控制事务粒度了
+> #### 到这的话，原本我是不想更新了，反正能正常使用。但是对于有强迫症的我，既然一开始就想着要有能减小事务粒度的功能，最后还是选择了更新
+> #### 更新内容：
+> * 对事务配置类(TransactionConfig)增加一些属性---(**新增**) <br>
+> * 对单独读写类(MyAloneHandlerReadWrite)增加readOnTransaction方法，和read方法基本一样，只是加了一个事务配置参数---(**新增**) <br>
+> #### 使用方法：
+> ```java
+> public void getContextOnTransactionOnMethod() {
+>     TransactionConfig transactionConfig = new TransactionConfig();
+>     transactionConfig.setIsolation(Isolation.REPEATABLE_READ);
+>     transactionConfig.setReadOnly(true);
+>     System.out.println(MyAloneHandlerReadWrite.readOnTransaction(() -> {
+>         System.out.println(toggleTestDao.getContext());
+>         System.out.println(toggleTestDao.getContext());
+>         try {
+>             /**
+>              * 在等待的时间在sql终端执行这条语句，下面两条语句的输出依然和上面的输出结果一致
+>              SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+>              begin;
+>              update user set name='slave1-1' where id=1;
+>              commit;
+>              */
+>             TimeUnit.SECONDS.sleep(10);
+>         } catch (InterruptedException e) {
+>             e.printStackTrace();
+>         }
+>         System.out.println(toggleTestDao.getContext());
+>         return toggleTestDao.getContext();
+>     }, transactionConfig, "slave1"));
+> }
+> ```
+> #### 对于依赖的话，这里就不贴了，[你可以到maven中央厂库搜索“zyh”获取最新版以及其他版本](https://mvnrepository.com/search?q=zyh "跳转到maven中央厂库") <br>
+> #### 其他功能，和之前使用方式一样
+
+---
+---
+---
+
 > ### 更新版本1.0.5 <br>
 > * 修复用户在配置文件进行配置的时候不提示的问题---(**优化**) <br>
 > #### 对于依赖的话，这里就不贴了，[你可以到maven中央厂库搜索“zyh”获取最新版以及其他版本](https://mvnrepository.com/search?q=zyh "跳转到maven中央厂库") <br>
 > #### 其他功能，和之前使用方式一样
 
+---
+---
 ---
 
 > ### 更新版本1.0.4 <br>
@@ -28,6 +95,8 @@
 > 对于依赖的话，这里就不贴了，[你可以到maven中央厂库搜索“zyh”获取最新版以及其他版本](https://mvnrepository.com/search?q=zyh "跳转到maven中央厂库") <br>
 > 其他功能，和之前使用方式一样，下面内容为1.0.3版本的内容（第一个版本）
 
+---
+---
 ---
 
 ## 自己写的一个读写分离小工具（下面就是介绍写的过程以及使用方法）：

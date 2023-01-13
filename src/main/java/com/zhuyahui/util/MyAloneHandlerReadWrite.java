@@ -13,8 +13,8 @@ import org.springframework.util.ObjectUtils;
  * 如果要解决service方法里面，再写的时候要做好几次查询验证，可以放弃注解，使用这里的读写方法
  *
  * @author : Zhu Yahui
- * @version : 1.0.0
- * @date : 2023/1/11
+ * @version : 1.0.6
+ * @date : 2023/1/13
  */
 public class MyAloneHandlerReadWrite {
     /**
@@ -93,12 +93,62 @@ public class MyAloneHandlerReadWrite {
      * @param clazz                             提供指定类型
      * @param slaveName                         指定的从库的名字
      * @param <T>                               提供指定类型
-     * @return 提供指定类型
+     * @return 返回原方法执行后的返回值
      */
     public static <T> T read(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, Class<T> clazz, String slaveName) {
         //把当前数据源改为指定从库
         MyDynamicDataSourceAop.handleReadAppoint(slaveName);
         return (T) myDynamicDataSourceParamInterface.execute();
+    }
+
+    /**
+     * @param myDynamicDataSourceParamInterface lambda接口
+     * @param transactionConfig                 事务的配置
+     * @return 返回原方法执行后的返回值
+     */
+    public static Object readOnTransaction(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, TransactionConfig transactionConfig) {
+        //此读方法可以加上事务
+        handleTransactionOnRead(transactionConfig,null);
+        return transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
+    }
+
+    /**
+     * @param myDynamicDataSourceParamInterface lambda接口
+     * @param clazz                             提供指定类型
+     * @param transactionConfig                 事务的配置
+     * @param <T>                               提供指定类型
+     * @return 返回原方法执行后的返回值
+     */
+    public static <T> T readOnTransaction(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, Class<T> clazz, TransactionConfig transactionConfig) {
+        //此读方法可以加上事务
+        handleTransactionOnRead(transactionConfig,null);
+        return (T) transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
+    }
+
+    /**
+     * @param myDynamicDataSourceParamInterface lambda接口
+     * @param transactionConfig                 事务的配置
+     * @param slaveName                         指定的从库的名字
+     * @return 返回原方法执行后的返回值
+     */
+    public static Object readOnTransaction(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, TransactionConfig transactionConfig, String slaveName) {
+        //把当前数据源改为指定从库
+        handleTransactionOnRead(transactionConfig, slaveName);
+        return transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
+    }
+
+    /**
+     * @param myDynamicDataSourceParamInterface lambda接口
+     * @param clazz                             提供指定类型
+     * @param transactionConfig                 事务的配置
+     * @param slaveName                         指定的从库的名字
+     * @param <T>                               提供指定类型
+     * @return 返回原方法执行后的返回值
+     */
+    public static <T> T readOnTransaction(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, Class<T> clazz, TransactionConfig transactionConfig, String slaveName) {
+        //把当前数据源改为指定从库
+        handleTransactionOnRead(transactionConfig, slaveName);
+        return (T) transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
     }
 
     /**
@@ -134,7 +184,7 @@ public class MyAloneHandlerReadWrite {
      * @return 返回原方法执行后的返回值
      */
     public static Object write(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, TransactionConfig transactionConfig) {
-        handlerTransaction(transactionConfig);
+        handlerTransactionOnWrite(transactionConfig);
         return transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
     }
 
@@ -149,7 +199,7 @@ public class MyAloneHandlerReadWrite {
      * @return 返回原方法执行后的返回值
      */
     public static <T> T write(MyDynamicDataSourceParamInterface myDynamicDataSourceParamInterface, Class<T> clazz, TransactionConfig transactionConfig) {
-        handlerTransaction(transactionConfig);
+        handlerTransactionOnWrite(transactionConfig);
         return (T) transactionTemplate.execute(status -> myDynamicDataSourceParamInterface.execute());
     }
 
@@ -160,6 +210,8 @@ public class MyAloneHandlerReadWrite {
         //需要把数据源改为主库
         MyDynamicDataSourceAop.handleWrite();
         //回归初始状态
+        transactionTemplate.setName("");
+        transactionTemplate.setReadOnly(false);
         transactionTemplate.setTimeout(-1);
         transactionTemplate.setIsolationLevel(Isolation.READ_COMMITTED.value());
         transactionTemplate.setPropagationBehavior(Propagation.REQUIRED.value());
@@ -172,17 +224,45 @@ public class MyAloneHandlerReadWrite {
      * @param transactionConfig 事务配置类
      */
     private static void handlerTransaction(TransactionConfig transactionConfig) {
-        //需要把数据源改为主库
-        MyDynamicDataSourceAop.handleWrite();
         Isolation isolation = transactionConfig.getIsolation();
         Propagation propagation = transactionConfig.getPropagation();
         int timeout = transactionConfig.getTimeout();
         String transactionManager = transactionConfig.getTransactionManager();
+        String name = transactionConfig.getName();
+        boolean readOnly = transactionConfig.getReadOnly();
         transactionTemplate.setTimeout(timeout);
         transactionTemplate.setPropagationBehavior(propagation.value());
         transactionTemplate.setIsolationLevel(isolation.value());
         if (!ObjectUtils.isEmpty(transactionManager)) {
             transactionTemplate.setTransactionManager((PlatformTransactionManager) currentApplicationContext.getBean(transactionManager));
         }
+        transactionTemplate.setName(name);
+        transactionTemplate.setReadOnly(readOnly);
+    }
+
+    /**
+     * 配置写的事务
+     *
+     * @param transactionConfig 事务配置类
+     */
+    private static void handlerTransactionOnWrite(TransactionConfig transactionConfig) {
+        //需要把数据源改为主库
+        MyDynamicDataSourceAop.handleWrite();
+        handlerTransaction(transactionConfig);
+    }
+
+    /**
+     * 配置读的事务
+     *
+     * @param transactionConfig 事务配置类
+     * @param slaveName         指定的从库的名字
+     */
+    private static void handleTransactionOnRead(TransactionConfig transactionConfig, String slaveName) {
+        if (ObjectUtils.isEmpty(slaveName)) {
+            MyDynamicDataSourceAop.handleRead();
+        } else {
+            MyDynamicDataSourceAop.handleReadAppoint(slaveName);
+        }
+        handlerTransaction(transactionConfig);
     }
 }
