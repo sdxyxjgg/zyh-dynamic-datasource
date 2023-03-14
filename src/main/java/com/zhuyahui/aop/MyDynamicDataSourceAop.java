@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 对service层进行切面，读的时候，或者写的时候，进行更换数据源
@@ -31,6 +33,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Aspect
 @Order(-1)
 public class MyDynamicDataSourceAop {
+
+    /**
+     * 对于列表必须要加锁
+     */
+    private static final Lock POLLING_LIST_LOCK=new ReentrantLock();
     /**
      * 这个属性负责轮询
      */
@@ -121,22 +128,27 @@ public class MyDynamicDataSourceAop {
     public static void handleRead() {
         //如果是读注解,先判断方式是轮询还是随机
         if (ChooseSlaveDataSourceWayEnum.RANDOM == MyHandleDataSourceParam.CHOOSE_SLAVE_WAY) {
-            //随机模式
+            //随机模式(随机模式是没有线程安全问题的)
             int size = MyHandleDataSourceParam.SLAVE_NAME.size();
             Random random = new Random();
             int index = random.nextInt(size);
             MyDynamicDataSourceContextHolder.setContextKey(MyHandleDataSourceParam.SLAVE_NAME.get(index));
         }
         if (ChooseSlaveDataSourceWayEnum.POLLING == MyHandleDataSourceParam.CHOOSE_SLAVE_WAY) {
-            //轮询模式
-            int size = MyHandleDataSourceParam.SLAVE_NAME.size();
-            if (POLLING_LIST.size() == 0) {
-                for (int i = 0; i < size; i++) {
-                    POLLING_LIST.add(i);
+            //轮询模式（因为list的删除修改，是有线程安全问题的,我们选择加锁）
+            POLLING_LIST_LOCK.lock();
+            try{
+                int size = MyHandleDataSourceParam.SLAVE_NAME.size();
+                if (POLLING_LIST.size() == 0) {
+                    for (int i = 0; i < size; i++) {
+                        POLLING_LIST.add(i);
+                    }
                 }
+                MyDynamicDataSourceContextHolder.setContextKey(MyHandleDataSourceParam.SLAVE_NAME.get(POLLING_LIST.get(0)));
+                POLLING_LIST.remove(0);
+            }finally {
+                POLLING_LIST_LOCK.unlock();
             }
-            MyDynamicDataSourceContextHolder.setContextKey(MyHandleDataSourceParam.SLAVE_NAME.get(POLLING_LIST.get(0)));
-            POLLING_LIST.remove(0);
         }
     }
 

@@ -12,10 +12,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-<!--    https://github.com/xiaomaomi-xj-->
+    <!--    https://github.com/xiaomaomi-xj-->
     <groupId>io.github.xiaomaomi-xj</groupId>
     <artifactId>zyh-dynamic-datasource</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
     <packaging>jar</packaging>
     <name>zyh-dynamic-datasource</name>
     <description>Dynamic data source with annotations and methods</description>
@@ -67,16 +67,15 @@
     </dependencies>
 
     <!--发布到maven仓库-->
-
     <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2</url>
-        </repository>
         <snapshotRepository>
-            <id>snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
         </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
 
     <profiles>
